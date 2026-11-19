@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=820">
+<title>Lodge Customer Entry</title>
+<style>
+@page{size:A4 portrait;margin:0}
+*{box-sizing:border-box}
+body{margin:0;background:#d9dde2;font-family:"Noto Sans Devanagari","Mangal",Arial,sans-serif;color:#000}
+.bar{position:sticky;top:0;z-index:5;background:#1f2937;color:#fff;padding:8px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bar button{background:#facc15;border:0;padding:8px 16px;font-weight:bold;border-radius:4px;font-size:14px}
+.bar .wa{background:#25D366;color:#fff}
+.bar input{padding:6px;border-radius:4px;border:0;width:140px;font-size:13px}
+.bar span{font-size:12px;opacity:.9}
+.page{width:210mm;height:297mm;margin:12px auto;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);padding:5mm;display:flex;flex-direction:column;gap:3mm;overflow:hidden}
+.head{flex:none;display:flex;gap:5mm;align-items:flex-end;height:11mm}
+.f{display:flex;align-items:flex-end;gap:2mm;min-width:0}
+.f label{white-space:nowrap;font-weight:700;font-size:12pt}
+.f input{flex:1;min-width:0;border:0;border-bottom:1.2px solid #000;background:transparent;font:600 13pt Arial,sans-serif;padding:0 2px;border-radius:0;outline:0}
+.photos{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3mm}
+.cell{position:relative;overflow:hidden;background:#fff;border:.3mm solid #000;container-type:size}
+.cell img{position:absolute;left:50%;top:50%;width:100cqw;height:100cqh;object-fit:cover}
+.cell .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#888;text-align:center;font-size:12pt}
+.ctl{position:absolute;left:3px;right:3px;bottom:3px;background:rgba(255,255,255,.94);border:1px solid #888;border-radius:4px;padding:3px 5px;font:10px Arial;display:grid;grid-template-columns:auto 1fr auto 1fr;gap:1px 5px;align-items:center}
+.ctl input[type=file]{grid-column:1/-1;font-size:10px}
+.ctl label,.ctl button{grid-column:1/-1;font-size:10px}
+@media print{
+  body{background:#fff}
+  .bar,.ctl,.ph{display:none!important}
+  .page{margin:0;box-shadow:none;height:296mm}
+  .cell{border-color:#fff}
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <button class="wa" id="wa">📲 WhatsApp पर भेजें</button>
+  <input id="wn" type="tel" placeholder="WhatsApp नं. (optional)">
+  <button onclick="window.print()">🖨 Print / प्रिंट</button>
+  <span>प्रिंट सेटिंग: A4 · Margins None · Scale 100% · सिर्फ 1 पेज</span>
+</div>
+
+<section class="page">
+  <div class="head">
+    <div class="f" style="flex:.7"><label>रूम नं.</label><input></div>
+    <div class="f" style="flex:1.4"><label>मोबाइल नं.</label><input type="tel"></div>
+    <div class="f" style="flex:1"><label>दिनांक</label><input id="d"></div>
+    <div class="f" style="flex:.8"><label>समय</label><input id="t"></div>
+    <div class="f" style="flex:1.3"><label>चेक-आउट</label><input id="co"></div>
+  </div>
+  <div class="photos" id="photos"></div>
+</section>
+
+<script>
+const n=new Date();
+document.getElementById('d').value=n.toLocaleDateString('en-GB');
+document.getElementById('t').value=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+const g=document.getElementById('photos');const cells=[];
+for(let i=1;i<=4;i++){
+  const c=document.createElement('div');c.className='cell';
+  c.innerHTML=`<div class="ph">आधार फोटो ${i}<br>(नीचे से चुनें)</div><img style="display:none">
+  <div class="ctl"><input type="file" accept="image/*">
+  <button type="button" class="cam">📷 Camera से फोटो खींचें</button><input type="file" class="camin" accept="image/*" capture="environment" style="display:none">
+  <span>Zoom</span><input class="z" type="range" min="0.5" max="4" step="0.01" value="1">
+  <span>←→</span><input class="x" type="range" min="-100" max="100" step="0.5" value="0">
+  <span>↑↓</span><input class="y" type="range" min="-100" max="100" step="0.5" value="0">
+  <label><input type="checkbox" class="fl" checked> पूरा भरें (Fill) — बंद करने पर पूरा कार्ड दिखेगा</label>
+  <button type="button" class="rot">↻ Rotate 90°</button></div>`;
+  g.appendChild(c);
+  const img=c.querySelector('img'),ph=c.querySelector('.ph');let r=90;
+  const q=s=>c.querySelector(s);cells.push({img,q,get r(){return r}});
+  const ap=()=>{
+    const side=(r%180!==0);
+    img.style.width=side?'100cqh':'100cqw';
+    img.style.height=side?'100cqw':'100cqh';
+    img.style.transform=`translate(-50%,-50%) translate(${q('.x').value}%,${q('.y').value}%) rotate(${r}deg) scale(${q('.z').value})`;
+  };
+  ap();
+  q('input[type=file]').onchange=e=>{const f=e.target.files[0];if(!f)return;img.src=URL.createObjectURL(f);img.style.display='block';ph.style.display='none'};
+  q('.camin').onchange=q('input[type=file]').onchange;q('.cam').onclick=()=>q('.camin').click();
+  c.querySelectorAll('input[type=range]').forEach(s=>s.oninput=ap);
+  q('.fl').onchange=e=>{img.style.objectFit=e.target.checked?'cover':'contain'};
+  q('.rot').onclick=()=>{r=(r+90)%360;ap()};
+}
+
+const wn=document.getElementById('wn');
+try{wn.value=localStorage.getItem('wn')||''}catch(e){}
+async function buildImage(){
+  const W=1654,H=2339,k=W/210;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W,H);
+  const labels=['रूम नं.','मोबाइल नं.','दिनांक','समय','चेक-आउट'],fl=[.7,1.4,1,.8,1.3];
+  const vals=[...document.querySelectorAll('.head input')].map(i=>i.value);
+  const tot=fl.reduce((a,b)=>a+b),avail=180;let px=5;
+  fl.forEach((f,i)=>{
+    const w=avail*f/tot;
+    x.fillStyle='#000';x.font=`bold ${4.4*k}px "Noto Sans Devanagari",Mangal,Arial,sans-serif`;
+    x.fillText(labels[i],px*k,14.5*k);
+    const lw=x.measureText(labels[i]).width/k+2;
+    x.font=`600 ${4.6*k}px Arial,sans-serif`;x.fillText(vals[i],(px+lw+1)*k,14.2*k);
+    x.fillRect((px+lw)*k,15.2*k,(w-lw)*k,.25*k);
+    px+=w+5;
+  });
+  cells.forEach((o,idx)=>{
+    const im=o.img;if(im.style.display==='none'||!im.naturalWidth)return;
+    const cw=98.5*k,ch=135*k,x0=(5+(idx%2)*101.5)*k,y0=(19+Math.floor(idx/2)*138)*k;
+    const side=(o.r%180!==0),bw=side?ch:cw,bh=side?cw:ch;
+    const fill=o.q('.fl').checked;
+    const sc=(fill?Math.max:Math.min)(bw/im.naturalWidth,bh/im.naturalHeight);
+    const dw=im.naturalWidth*sc,dh=im.naturalHeight*sc;
+    x.save();x.beginPath();x.rect(x0,y0,cw,ch);x.clip();
+    x.translate(x0+cw/2,y0+ch/2);
+    x.translate(o.q('.x').value/100*bw,o.q('.y').value/100*bh);
+    x.rotate(o.r*Math.PI/180);x.scale(+o.q('.z').value,+o.q('.z').value);
+    x.beginPath();x.rect(-bw/2,-bh/2,bw,bh);x.clip();
+    x.drawImage(im,-dw/2,-dh/2,dw,dh);x.restore();
+  });
+  return new Promise(res=>cv.toBlob(res,'image/jpeg',.92));
+}
+document.getElementById('wa').onclick=async()=>{
+  const v=[...document.querySelectorAll('.head input')].map(i=>i.value);
+  const text=`Room: ${v[0]}\nMobile: ${v[1]}\nDate: ${v[2]} ${v[3]}\nCheck-out: ${v[4]}`;
+  const blob=await buildImage();
+  const file=new File([blob],`room-${v[0]||'form'}-${v[2].replace(/\//g,'-')}.jpg`,{type:'image/jpeg'});
+  const num=wn.value.replace(/\D/g,'');
+  try{localStorage.setItem('wn',wn.value)}catch(e){}
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],text});}catch(e){}
+  }else{
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;a.click();
+    window.open('https://wa.me/'+(num.length===10?'91'+num:num)+'?text='+encodeURIComponent(text),'_blank');
+    alert('फोटो डाउनलोड हो गई है। WhatsApp चैट में उसे Attach (📎) करके भेजें।');
+  }
+};
+</script>
+</body>
+</html>
